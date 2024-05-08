@@ -1,3 +1,8 @@
+#Trabalho para disciplina de Redes de Computadores minitrada pelo Professor Fernando;
+#Esse arquivo se trata da segunda parte do projeto onde era pra implementar um socket RAW com IPPROT_UDP;
+#Fiz projeto sozinho, não consegui completar a parte do tratamento da resposta, também acredito que não estou conseguindo obeter a resposta do servidor correto.
+#Mas toda a parte de montagem do cabeçalho e do checksum consegui fazer e gostei do meu desempeho com o checksum.
+
 import tkinter as tk
 import socket
 import struct
@@ -10,8 +15,8 @@ class infoCabeçalho:
         self.ip_orig = self.get_ip_orig() 
         self.ip_dest = socket.inet_aton('15.228.191.109')
         self.ip_prot = 17
-        self.comp_udp = 11
         
+        self.comp_udp = 11
         self.udp_port = 50000
         self.udp_orig_port = 59155
         self.udp_checksum = 0
@@ -24,7 +29,6 @@ class infoCabeçalho:
         conexao = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         conexao.connect(("8.8.8.8", 80))
         ip_orig, _ = conexao.getsockname()
-        print(ip_orig)
         conexao.close()
         return socket.inet_aton(ip_orig)
 
@@ -44,17 +48,34 @@ class infoCabeçalho:
     def second_id(self): #segundo byte do identificador
         return self.__div_aleatorio[1]
 
-    def montarCabeçalho(self, msg_comp):
-        # Montagem do cabeçalho completo
-        return struct.pack("!4s4sHHHHHBBBB", self.ip_orig, self.ip_dest, self.ip_prot, self.comp_udp,
-                            self.udp_orig_port, self.udp_port, self.comp_udp, self.udp_checksum, msg_comp, self.first_id(), self.second_id())
-        #estou criando uma struct com 4Bytes do IP de origem, 4Bytes do IP de destino, 5 conjuntos de 2Bytes para dados referente a protocolo e comprimento do cabeçalho,
-        #4 conjuntos de 1Byte checksum, o byte do tipo da requisição e os 2 bytes do identificador
+    def montarCabeçalho(self, msg):
+        self.udp_checksum = 0
+        cabeça = struct.pack("!4s4sHHHHHBBBB", self.ip_orig, self.ip_dest, self.ip_prot, self.comp_udp,
+                            self.udp_orig_port, self.udp_port, self.comp_udp, msg, self.first_id(), self.second_id(), 0x00)
+        #estou criando uma estrutura temporária para fazer o somatório dos conjuntos de 2 bytes,
+        #aproveitando que o checksum é 0 até então, ele não precisa entrar no cálculo
+        for i in range(0, len(cabeça), 2):
+            byte1, byte2 = cabeça[i:i+2]
+            self.udp_checksum += (byte1 << 8) + byte2
+        print("checksum - valor do somatório = ", self.udp_checksum)
+        #após o somatório, podemos ir para a próxima etápa
+        #ultilizando conceitos de circuitos lógicos temos
+        self.udp_checksum &= 0xFFFF  #realizando um AND para caso necessite wraparound
+        print("checksum calculado e com wraparound = ", self.udp_checksum)
+        self.udp_checksum = ~ (self.udp_checksum) & 0xFFFF #fazendo um NOT do valor para ter o checksum final
+        print("checksum complemento de 1 =", self.udp_checksum)
+
+        #montando requisição completa
+        return struct.pack("!4s4sHHHHHHBBB", self.ip_orig, self.ip_dest, self.ip_prot, self.comp_udp,
+                            self.udp_orig_port, self.udp_port, self.comp_udp, self.udp_checksum, msg, self.first_id(), self.second_id())
+        #estou criando uma struct com 4 bytes do IP de origem, 4 bytes do IP de destino, 5 conjuntos de 2 bytes para dados referente a protocolo e comprimento do cabeçalho,
+                                    # mais 2 bytes checksum, 1 byte do tipo da requisição e os 2 bytes do identificador
 
 #criação dos métodos vinculados aos botões
 def data_hora():    
-    byte_0 = 0b0000 #byte definindo a opção de requisição para receber data e hora
+    byte_0 = 0b00 #byte definindo a opção de requisição para receber data e hora
 
+    #chama a função que monta a requisição
     requisiçao = cabeçalho.montarCabeçalho(byte_0)
     print(requisiçao)
 
@@ -62,11 +83,12 @@ def data_hora():
 
     resposta, dados_servidor = comunicacao.recvfrom(2048) #recebendo resposta do servidor
     print(resposta)
-    #for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a informação
-        #textbox.insert(tk.END, chr(resposta[i+4]))
+    textbox.delete("1.0", "end") #apaga a mensagem anterior na caixa de texto
+    for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a informação
+        textbox.insert(tk.END, chr(resposta[i]))
 
 def msg():
-    byte_0 = 0b0001 #byte definindo a opção de requisição para mensagem motivacional
+    byte_0 = 0b01 #byte definindo a opção de requisição para mensagem motivacional
     
     requisiçao = cabeçalho.montarCabeçalho(byte_0)
     print(requisiçao)
@@ -75,11 +97,12 @@ def msg():
 
     resposta, dados_servidor = comunicacao.recvfrom(2048) #recebendo resposta do servidor
     print(resposta)
-    #for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a informação
-        #textbox.insert(tk.END, chr(resposta[i+4]))
+    textbox.delete("1.0", "end")
+    for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a informação
+        textbox.insert(tk.END, chr(resposta[i]))
 
 def quant():
-    byte_0 = 0b0010 #byte definindo a opção de requisição para saber a quantidade de solicitações que o servidor teve
+    byte_0 = 0b10 #byte definindo a opção de requisição para saber a quantidade de solicitações que o servidor teve
     
     requisiçao = cabeçalho.montarCabeçalho(byte_0)
     print(requisiçao)
@@ -88,7 +111,6 @@ def quant():
 
     resposta, dados_servidor = comunicacao.recvfrom(2048) #recebendo resposta do servidor
     print(resposta)
-    
     total = 0
     #for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a quantidade de requisições
         #total = total + (int(resposta[i+4]) * (16 ** (3 - i))) #somando os valores separados por bytes

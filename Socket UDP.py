@@ -1,9 +1,14 @@
+#Trabalho para disciplina de Redes de Computadores minitrada pelo Professor Fernando;
+#Esse arquivo se trata da segunda parte do projeto onde era pra implementar um socket RAW com IPPROT_UDP;
+#Fiz projeto sozinho, está completo e sinto que foi uma experiência, além de importante, divertida. 
+
 import tkinter as tk
 import socket
 import random
 
 from tkinter import messagebox
 
+#criei uma classe para guardar as informações e métodos que se repetiriam
 class infoCabeçalho:
     def __init__(self, udp_ip, udp_port, aleatorio):
         self.__udp_ip = udp_ip
@@ -30,7 +35,7 @@ def data_hora():
     byte_0 = 0b0000 #byte definindo a opção de requisição
     byte_1 = cabeçalho.first_id() #primeiro byte da identificação
     byte_2 = cabeçalho.second_id() #segundo byte da identificação
-    print(byte_0, " | ", byte_1, " | ", byte_2)
+    #print(byte_0, " | ", byte_1, " | ", byte_2)
 
     msg_comp = bytes([byte_0, byte_1, byte_2]) #juntando todos os bytes antes de enviar a requisição
 
@@ -38,7 +43,7 @@ def data_hora():
     print(msg_comp, "- enviada com sucesso.")
 
     resposta, dados_servidor = comunicacao.recvfrom(1024) #recebendo resposta do servidor
-    
+    textbox.delete("1.0", "end")
     for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a informação
         textbox.insert(tk.END, chr(resposta[i+4]))
 
@@ -46,7 +51,7 @@ def msg():
     byte_0 = 0b0001 #byte definindo a opção de requisição
     byte_1 = cabeçalho.first_id() #primeiro byte da identificação
     byte_2 = cabeçalho.second_id() #segundo byte da identificação
-    print(byte_0, " | ", byte_1, " | ", byte_2)
+    #print(byte_0, " | ", byte_1, " | ", byte_2)
 
     msg_comp = bytes([byte_0, byte_1, byte_2]) #juntando todos os bytes antes de enviar a requisição
 
@@ -54,7 +59,7 @@ def msg():
     print(msg_comp, "- enviada com sucesso.")
 
     resposta, dados_servidor = comunicacao.recvfrom(1024) #recebendo resposta do servidor
-    
+    textbox.delete("1.0", "end")
     for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a mensagem
         textbox.insert(tk.END, chr(resposta[i+4]))
 
@@ -62,7 +67,7 @@ def quant():
     byte_0 = 0b0010 #byte definindo a opção de requisição
     byte_1 = cabeçalho.first_id() #primeiro byte da identificação
     byte_2 = cabeçalho.second_id() #segundo byte da identificação
-    print(byte_0, " | ", byte_1, " | ", byte_2)
+    #print(byte_0, " | ", byte_1, " | ", byte_2)
 
     msg_comp = bytes([byte_0, byte_1, byte_2]) #juntando todos os bytes antes de enviar a requisição
 
@@ -70,8 +75,7 @@ def quant():
     print(msg_comp, "- enviada com sucesso.")
 
     resposta, dados_servidor = comunicacao.recvfrom(1024) #recebendo resposta do servidor
-    print(resposta)
-    print(resposta[6])
+    textbox.delete("1.0", "end")
     total = 0
     for i in range(0, int(resposta[3])): #filtrando a mensagem para pegar apenas a quantidade de requisições
         total = total + (int(resposta[i+4]) * (16 ** (3 - i))) #somando os valores separados por bytes
